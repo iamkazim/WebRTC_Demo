@@ -6,7 +6,8 @@ import AsyncStorage from '@react-native-community/async-storage';
 import { TextInput } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import Modal from 'react-native-modal';
-import { GiftedChat } from 'react-native-gifted-chat'
+import { GiftedChat } from 'react-native-gifted-chat';
+// import io from "socket.io-client";
 
 import {
     RTCPeerConnection,
@@ -32,6 +33,7 @@ export default function ChatScreen({ navigation, ...props }) {
     console.log("Chat Messege", messages);
 
     const conn = useRef(new WebSocket(SOCKET_URL));
+    // const conn = useRef(io.connect(SOCKET_URL));
 
     const yourConn = useRef(
         new RTCPeerConnection({

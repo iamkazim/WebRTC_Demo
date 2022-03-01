@@ -15,7 +15,7 @@ export default function LoginScreen(props) {
       await AsyncStorage.setItem('userId', userId);
       setLoading(false);
       // props.navigation.push('Call');
-      props.navigation.push('Chat');
+      props.navigation.push('NewChat');
     } catch (err) {
       console.log('Error', err);
       setLoading(false);

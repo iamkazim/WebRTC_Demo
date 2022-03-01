@@ -8,7 +8,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import Modal from 'react-native-modal';
 import { GiftedChat } from 'react-native-gifted-chat';
 // import io from "socket.io-client";
-
 import {
     RTCPeerConnection,
     RTCIceCandidate,
@@ -21,7 +20,7 @@ import {
 } from 'react-native-webrtc';
 
 const STUN_SERVER = 'stun:webrtc.skyrockets.space:3478';
-const SOCKET_URL = 'http://159.203.8.120:8886';
+const SOCKET_URL = 'http://159.203.8.120:3001';
 
 export default function ChatScreen({ navigation, ...props }) {
     const [userId, setUserId] = useState('');
@@ -32,8 +31,17 @@ export default function ChatScreen({ navigation, ...props }) {
     const [messages, setMessages] = useState([]); // Chats between the peers will be stored here
     console.log("Chat Messege", messages);
 
+    // const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhY2hpbi50YWxtYWxlLjU1MTgzMkBnbWFpbC5jb20iLCJpYXQiOjE2NDU2MTg5NDYsImV4cCI6MTY0NTYyMjU0Nn0.4T_Q2Fc2F_Lmxfr6lSyQzRHzgS7sMxKn4ok_rZk3Z3I'
+
+    // const conn = useRef(new WebSocket(SOCKET_URL, null, {
+    //     headers: {
+    //         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhY2hpbi50YWxtYWxlLjU1MTgzMkBnbWFpbC5jb20iLCJpYXQiOjE2NDU2ODc4NTgsImV4cCI6MTY0NTY5MTQ1OH0.uz2l-W_bxZDEypmLnALCTKWygB6LGwNu1RX5R0zsoGs'
+    //     }
+    // }));
     const conn = useRef(new WebSocket(SOCKET_URL));
     // const conn = useRef(io.connect(SOCKET_URL));
+    // const io = socketIo(SOCKET_URL)
+    // console.log('io response', io);
 
     const yourConn = useRef(
         new RTCPeerConnection({
@@ -99,6 +107,10 @@ export default function ChatScreen({ navigation, ...props }) {
         }
     }, [socketActive, userId]);
 
+    const handleProfile = async (profile) => {
+        console.log("PROFILE", profile)
+    }
+
     const onLogin = () => { };
 
     useEffect(() => {
@@ -113,8 +125,12 @@ export default function ChatScreen({ navigation, ...props }) {
         //when we got a message from a signaling server
         conn.current.onmessage = (msg) => {
             const data = JSON.parse(msg.data);
-            // console.log('Data --------------------->', data);
+            console.log('Data --------------------->', data);
             switch (data.type) {
+                case 'profile':
+                    handleProfile(data.profile)
+                    console.log('Profile');
+                    break;
                 case 'login':
                     console.log('Login');
                     break;
@@ -454,6 +470,13 @@ export default function ChatScreen({ navigation, ...props }) {
                         Disconnect
                     </Button>
                 </View>
+
+                <Button
+                    mode="contained"
+                    onPress={handleProfile}
+                    contentStyle={styles.btnContent}>
+                    Profile Check
+                </Button>
             </View>
             <GiftedChat
                 messages={messages}

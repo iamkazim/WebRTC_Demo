@@ -42,35 +42,6 @@ const UserList = ({ navigation }) => {
         const pass = { name: text }
         socketRef.current.emit('user list', pass)
 
-        // const communityId = '123123';
-        // socketRef.current.on('join community', ({ communityId, yourID }) => {
-        //     const userrr = join_User(socket.id, communityId, yourID);
-        //     console.log(socket.id, '=id');
-        //     socket.join(userrr, room);
-
-        //     socketRef.current.emit('community chat', {
-        //         communityId: '12345',
-        //         profileId: yourID,
-        //         message: 'Hello Hi'
-        //     })
-        // })
-
-        // ** */ For Community Joining
-        // socketRef.current.on('join community', (para) => {
-        //     console.log("Community", para);
-        // })
-
-        // socketRef.current.emit('join community', para)
-
-        socketRef.current.on('community chat', (ComChat) => {
-            console.log("Community Chat", ComChat);
-        })
-        const ComChat = {
-            communityId: '12345',
-            profileId: yourID,
-            message: 'Hello Hi'
-        }
-        socketRef.current.emit('community chat', ComChat)
     }
 
     useEffect(() => {

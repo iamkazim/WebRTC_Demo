@@ -45,7 +45,7 @@ export default function LogScreen({ navigation }) {
                 //     alert("Invalid email or password")
                 // }
                 if (responseJson.status == "OK") {
-                    navigation.navigate("Community Chat")
+                    navigation.navigate("Users Screen")
                 }
             })
     }

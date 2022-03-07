@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, PermissionsAndroid, Alert, Image } from "react-native";
 import io from "socket.io-client";
 import AsyncStorage from '@react-native-community/async-storage';
+import DocumentPicker from 'react-native-document-picker';
+import { Buffer } from "buffer";
+global.Buffer = Buffer;
+import ImgToBase64 from 'react-native-image-base64';
 // import { useFocusEffect } from '@react-navigation/native';
 // import { Chats } from '../Data/DummyData';
 
@@ -10,7 +14,7 @@ const NewChatScreen = ({ route, navigation }) => {
     const [token, setToken] = useState('');
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState("");
-    const [file, setFile] = useState();
+    const [file, setFile] = useState({});
     console.log("all messages", messages);
     const Ids = route?.params?.Id[0]?.profileId
     console.log(Ids);
@@ -63,56 +67,119 @@ const NewChatScreen = ({ route, navigation }) => {
         });
     }, [yourID]);
 
-    function UserlistShow() {
-        const pass = { name: 'sa' }
-        socketRef.current.emit('user list', pass)
-    }
-
     function receivedMessage(message) {
         setMessages(oldMsgs => [...oldMsgs, message]);
     }
 
+    // const output = file.map(user => {
+    //     console.log('^^^^', user);
+    //     console.log(output);
+    // })
+
+    // var str = Object.keys(file).map(function (key) {
+    //     return "" + key + "=" + data[key]; // line break for wrapping only
+    // }).join("&");
+    // console.log(str);
+
+    const chooseFile = async () => {
+        // Opening Document Picker to select one file
+        try {
+            const res = await DocumentPicker.pick({
+                // Provide which type of file you want user to pick
+                type: [DocumentPicker.types.images],
+                // There can me more options as well
+                // DocumentPicker.types.allFiles
+                // DocumentPicker.types.images
+                // DocumentPicker.types.plainText
+                // DocumentPicker.types.audio
+                // DocumentPicker.types.pdf
+            });
+            // Printing the log realted to the file
+            console.log('res : ' + JSON.stringify(res));
+            // ImgToBase64.getBase64String(res[0])
+            //     .then(async (base64String) => {
+            //         let source = "data:image/jpeg;base64," + base64String;
+            //         console.log("base64", source);
+            //     })
+            // Setting the state to show single file attributes
+            setFile(res[0]);
+            //setFilePath(res)
+        } catch (err) {
+            setFile(null);
+            // Handling any exception (If any)
+            if (DocumentPicker.isCancel(err)) {
+                // If user canceled the document selection
+                //alert('Canceled');
+            } else {
+                // For Unknown Error
+                // alert('Unknown Error: ' + JSON.stringify(err));
+                throw err;
+            }
+        }
+    }
+    console.log('file', file)
+    console.log("type", file.type);
+    const buf = Buffer.from(JSON.stringify(file));
+    console.log("BuFF", buf);
+    var temp = JSON.parse(buf.toString());
+    console.log("Converted", temp);
+
+    // const buf = Buffer.from()
+    // const bufferForm = Buffer.from('file', 'utf-8');
+    // console.log("buffer", bufferForm)
+    // const buffer = Buffer.from(file, 'base64')
+    // console.log("Buffer", buffer);
+    // fs.readFile(file, function (err, buffer) {
+    //     console.log(buffer);
+    // })
+
     function sendMessage(e) {
         e.preventDefault();
-        if (file) {
-            const messageObject = {
-                id: yourID,
-                senderProfileId: "620110b40eaa0f19b9122159",
-                receiverProfileId: "6201008d109a22560ef31a6f",
-                type: "file",
-                body: file,
-                mimeType: file.type,
-                fileName: file.name
-            };
-            setMessage("");
-            setFile();
-            socketRef.current.emit("send message", messageObject);
-        } else {
-            var receiverProfileId;
-            if (yourID == yourID) {
-                receiverProfileId = Ids
-            }
-            else {
-                receiverProfileId = yourID
-            }
-            const messageObject = {
-                senderProfileId: yourID,
-                receiverProfileId: receiverProfileId,
-                message: message,
-                id: yourID,
-            };
-            setMessage("");
-            socketRef.current.emit("send message", messageObject);
+        // if (file) {
+        //     var receiverProfileId;
+        //     if (yourID == yourID) {
+        //         receiverProfileId = Ids
+        //     }
+        //     else {
+        //         receiverProfileId = yourID
+        //     }
+        //     const messageObject = {
+        //         id: yourID,
+        //         senderProfileId: yourID,
+        //         receiverProfileId: receiverProfileId,
+        //         type: "file",
+        //         body: '<Buffer 66 69 6c 65>',
+        //         mimeType: file?.type,
+        //         fileName: file?.name
+        //     };
+        //     setMessage("");
+        //     setFile();
+        //     socketRef.current.emit("send message", messageObject);
+        // } else {
+        var receiverProfileId;
+        if (yourID == yourID) {
+            receiverProfileId = Ids
         }
+        else {
+            receiverProfileId = yourID
+        }
+        const messageObject = {
+            senderProfileId: yourID,
+            receiverProfileId: receiverProfileId,
+            message: message,
+            id: yourID,
+        };
+        setMessage("");
+        socketRef.current.emit("send message", messageObject);
+    }
+    // }
+    function selectFile(e) {
+        setMessage(e.target.files[0].name);
+        setFile(e.target.files[0]);
     }
 
     function handleChange(text) {
         setMessage(text);
-    }
-
-    function selectFile(e) {
-        setMessage(e.target.files[0].name);
-        setFile(e.target.files[0]);
     }
 
     function renderMessages(message, index) {
@@ -132,24 +199,44 @@ const NewChatScreen = ({ route, navigation }) => {
                 </PartnerRow>
             )
         }
+    };
 
-        if (message.id === yourID) {
-            return (
-                <MyRow key={index}>
-                    <MyMessage>
-                        {message.body}
-                    </MyMessage>
-                </MyRow>
-            )
-        }
+    // const chooseFile = async () => {
+    //     try {
+    //         const granted = await PermissionsAndroid.request(
+    //             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+    //             {
+    //                 title: 'Demo Storage Permission',
+    //                 message:
+    //                     'Demo App needs access to your storage to download Photos.',
+    //             },
+    //         );
+    //         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+    //             const image = await DocumentPicker.pick({
+    //                 type: [DocumentPicker.types.allFiles],
+    //             });
+    //             // console.log('Image@@ : ' + JSON.stringify(image[0]));
+    //             setFile(JSON.stringify(image[0]))
+    //             console.log("File", file);
+    //         } else {
+    //             Alert.alert('Storage Permission Not Granted');
+    //         }
+    //     } catch (err) {
+    //         console.warn(err);
+    //     }
+    // };
+
+
+    const renderFile = () => {
         return (
-            <PartnerRow key={index}>
-                <PartnerMessage>
-                    {message.body}
-                </PartnerMessage>
-            </PartnerRow>
+            <View>
+                {/* <TextInput type='file' onChange={selectFile} /> */}
+                <Image
+                    source={{ uri: file.uri }}
+                    style={{ width: 80, height: 90 }} />
+            </View>
         )
-    }
+    };
 
     const renderMessagesItem = ({ item }) => {
         return (
@@ -179,6 +266,7 @@ const NewChatScreen = ({ route, navigation }) => {
                     placeholder="Messege here"
                     value={message}
                     onChangeText={handleChange} />
+                {file ? renderFile() : null}
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
                     <TouchableOpacity onPress={sendMessage}
@@ -186,14 +274,14 @@ const NewChatScreen = ({ route, navigation }) => {
                             height: 40, width: 90, backgroundColor: 'skyblue',
                             justifyContent: 'center', alignItems: 'center', borderRadius: 15
                         }}>
-                        <Text style={{ fontWeight: 'bold' }}>Send</Text>
+                        <Text style={{ fontWeight: 'bold' }}> Send</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={UserlistShow}
+                    <TouchableOpacity onPress={chooseFile}
                         style={{
                             height: 40, width: 90, backgroundColor: 'skyblue',
                             justifyContent: 'center', alignItems: 'center', borderRadius: 15
                         }}>
-                        <Text style={{ fontWeight: 'bold' }}>Users List</Text>
+                        <Text style={{ fontWeight: 'bold' }}>Choose File</Text>
                     </TouchableOpacity>
                 </View>
             </View>

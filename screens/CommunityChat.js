@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TextInput, TouchableOpacity, Image } from "react-native";
 import io from "socket.io-client";
 import AsyncStorage from '@react-native-community/async-storage';
+import DocumentPicker from 'react-native-document-picker';
 
 const CommunityChatScreen = ({ route, navigation }) => {
     const [yourID, setYourID] = useState();
@@ -10,8 +11,6 @@ const CommunityChatScreen = ({ route, navigation }) => {
     const [message, setMessage] = useState("");
     const [file, setFile] = useState();
     console.log("all messages", messages);
-    const Ids = route?.params?.Id[0]?.profileId
-    console.log(Ids);
 
     const socketRef = useRef();
 
@@ -68,10 +67,10 @@ const CommunityChatScreen = ({ route, navigation }) => {
         if (file) {
             const messageObject = {
                 id: yourID,
-                senderProfileId: "620110b40eaa0f19b9122159",
-                receiverProfileId: "6201008d109a22560ef31a6f",
+                senderProfileId: yourID,
+                // receiverProfileId: "6201008d109a22560ef31a6f",
                 type: "file",
-                body: file,
+                file: file,
                 mimeType: file.type,
                 fileName: file.name
             };
@@ -79,13 +78,6 @@ const CommunityChatScreen = ({ route, navigation }) => {
             setFile();
             socketRef.current.emit("send message", messageObject);
         } else {
-            var receiverProfileId;
-            if (yourID == yourID) {
-                receiverProfileId = Ids
-            }
-            else {
-                receiverProfileId = yourID
-            }
             const messageObject = {
                 communityId: '12345',
                 profileId: yourID,
@@ -100,11 +92,27 @@ const CommunityChatScreen = ({ route, navigation }) => {
         setMessage(text);
     }
 
+    const chooseFile = async () => {
+        try {
+            const res = await DocumentPicker.pick({
+                type: [DocumentPicker.types.images],
+            });
+            console.log('res : ' + JSON.stringify(res));
+            setFile(res[0]);
+        } catch (err) {
+            setFile(null);
+            if (DocumentPicker.isCancel(err)) {
+            } else {
+                throw err;
+            }
+        }
+    }
+
     const renderMessagesItem = ({ item }) => {
         return (
             <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <View style={{
-                    width: '80%', margin: 5, alignSelf: item.profileId === yourID ? 'flex-start' : 'flex-end',
+                    width: '80%', margin: 5, alignSelf: item.profileId === yourID ? 'flex-end' : 'flex-start',
                     borderRadius: 12, justifyContent: 'center', backgroundColor: item.profileId != yourID ? 'lightgrey' : 'cyan'
                 }}>
                     <Text style={{ fontSize: 18, fontWeight: '800', margin: 10 }}>
@@ -114,6 +122,16 @@ const CommunityChatScreen = ({ route, navigation }) => {
             </View>
         )
     }
+
+    const renderFile = () => {
+        return (
+            <View>
+                <Image
+                    source={{ uri: file.uri }}
+                    style={{ width: 80, height: 90 }} />
+            </View>
+        )
+    };
 
     return (
         <View style={{ flex: 1, padding: 10, backgroundColor: '#FFFFFF' }}>
@@ -128,6 +146,7 @@ const CommunityChatScreen = ({ route, navigation }) => {
                     placeholder="Messege here"
                     value={message}
                     onChangeText={handleChange} />
+                {file ? renderFile() : null}
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
                     <TouchableOpacity onPress={sendMessage}
@@ -137,13 +156,13 @@ const CommunityChatScreen = ({ route, navigation }) => {
                         }}>
                         <Text style={{ fontWeight: 'bold' }}>Send</Text>
                     </TouchableOpacity>
-                    {/* <TouchableOpacity onPress={UserlistShow}
+                    <TouchableOpacity onPress={chooseFile}
                         style={{
                             height: 40, width: 90, backgroundColor: 'skyblue',
                             justifyContent: 'center', alignItems: 'center', borderRadius: 15
                         }}>
-                        <Text style={{ fontWeight: 'bold' }}>Users List</Text>
-                    </TouchableOpacity> */}
+                        <Text style={{ fontWeight: 'bold' }}>Choose File</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 

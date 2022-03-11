@@ -70,7 +70,7 @@ const CommunityChatScreen = ({ route, navigation }) => {
                 senderProfileId: yourID,
                 // receiverProfileId: "6201008d109a22560ef31a6f",
                 type: "file",
-                file: file,
+                file: manipulator,
                 mimeType: file.type,
                 fileName: file.name
             };

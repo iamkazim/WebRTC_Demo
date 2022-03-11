@@ -79,6 +79,8 @@ target 'webrtcApp' do
 
   pod 'ReactNativeIncallManager', :path => '../node_modules/react-native-incall-manager'
 
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+
   target 'webrtcAppTests' do
     inherit! :complete
     # Pods for testing

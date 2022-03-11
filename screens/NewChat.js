@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, PermissionsAndroid, Alert, Image } from "react-native";
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, Image } from "react-native";
 import io from "socket.io-client";
 import AsyncStorage from '@react-native-community/async-storage';
 import DocumentPicker from 'react-native-document-picker';
-import { Buffer } from "buffer";
-global.Buffer = Buffer;
+import RNFS from 'react-native-fs';
+
 // import ImgToBase64 from 'react-native-image-base64';
 // import { useFocusEffect } from '@react-navigation/native';
 // import { Chats } from '../Data/DummyData';
@@ -14,7 +14,8 @@ const NewChatScreen = ({ route, navigation }) => {
     const [token, setToken] = useState('');
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState("");
-    const [file, setFile] = useState({});
+    const [file, setFile] = useState(null);
+    const [imageCon, setImageCon] = useState();
     console.log("all messages", messages);
     const Ids = route?.params?.Id[0]?.profileId
     console.log(Ids);
@@ -52,7 +53,7 @@ const NewChatScreen = ({ route, navigation }) => {
         // **// 
 
         socketRef.current.on("receive message", (message) => {
-            console.log("________", message);
+            // console.log("________", message);
             receivedMessage(message);
         });
     };
@@ -73,27 +74,7 @@ const NewChatScreen = ({ route, navigation }) => {
 
     function sendMessage(e) {
         e.preventDefault();
-        if (file) {
-            var receiverProfileId;
-            if (yourID == yourID) {
-                receiverProfileId = Ids
-            }
-            else {
-                receiverProfileId = yourID
-            }
-            const messageObject = {
-                id: yourID,
-                senderProfileId: yourID,
-                receiverProfileId: receiverProfileId,
-                type: "file",
-                file: file,
-                mimeType: file?.type,
-                fileName: file?.name
-            };
-            setMessage("");
-            setFile();
-            socketRef.current.emit("send message", messageObject);
-        } else {
+        if (!file) {
             var receiverProfileId;
             if (yourID == yourID) {
                 receiverProfileId = Ids
@@ -108,6 +89,38 @@ const NewChatScreen = ({ route, navigation }) => {
                 id: yourID,
             };
             setMessage("");
+            socketRef.current.emit("send message", messageObject);
+        } else {
+            var receiverProfileId;
+            if (yourID == yourID) {
+                receiverProfileId = Ids
+            }
+            else {
+                receiverProfileId = yourID
+            }
+
+            // const manipulator = ImageManipulator.manipulateAsync(file.uri, [
+            //     { resize: { width: 300, height: 300 } }
+            // ], {
+            //     compress: 1,
+            //     format: ImageManipulator.SaveFormat.JPEG,
+            //     base64: true
+            // })
+            RNFS.readFile(file.uri, 'base64').then(res => {
+                setImageCon(res);
+                console.log("response", imageCon);
+            })
+            const messageObject = {
+                id: yourID,
+                senderProfileId: yourID,
+                receiverProfileId: receiverProfileId,
+                type: "file",
+                file: imageCon,
+                mimeType: file?.type,
+                fileName: file?.name
+            };
+            setMessage("");
+            setFile();
             socketRef.current.emit("send message", messageObject);
         }
     }
@@ -124,12 +137,29 @@ const NewChatScreen = ({ route, navigation }) => {
             console.log('res : ' + JSON.stringify(res));
             setFile(res[0]);
         } catch (err) {
-            setFile(null);
             if (DocumentPicker.isCancel(err)) {
             } else {
                 throw err;
             }
         }
+    }
+
+    const renderMessagesItem = ({ item }) => {
+        console.log("itemss", item);
+        return (
+            <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+                <View style={{
+                    width: '80%', margin: 5, alignSelf: item.senderProfileId === yourID ? 'flex-start' : 'flex-end',
+                    borderRadius: 12, justifyContent: 'center', backgroundColor: item.senderProfileId != yourID ? 'lightgrey' : 'cyan'
+                }}>
+                    <Text style={{ fontSize: 18, fontWeight: '800', margin: 10 }}>
+                        {item.message}
+                    </Text>
+                    {item.file ?
+                        <Image source={{ uri: item.imageUrl }} style={{ width: 90, height: 90 }} /> : null}
+                </View>
+            </View>
+        )
     }
 
     const renderFile = () => {
@@ -141,21 +171,6 @@ const NewChatScreen = ({ route, navigation }) => {
             </View>
         )
     };
-
-    const renderMessagesItem = ({ item }) => {
-        return (
-            <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-                <View style={{
-                    width: '80%', margin: 5, alignSelf: item.senderProfileId === yourID ? 'flex-start' : 'flex-end',
-                    borderRadius: 12, justifyContent: 'center', backgroundColor: item.senderProfileId != yourID ? 'lightgrey' : 'cyan'
-                }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', margin: 10 }}>
-                        {item.message}
-                    </Text>
-                </View>
-            </View>
-        )
-    }
 
     return (
         <View style={{ flex: 1, padding: 10, backgroundColor: '#FFFFFF' }}>
@@ -191,16 +206,6 @@ const NewChatScreen = ({ route, navigation }) => {
             </View>
 
         </View>
-        // <Page>
-        //     <Container>
-        //         {messages.map(renderMessages)}
-        //     </Container>
-        //     <Form onSubmit={sendMessage}>
-        //         <TextArea value={message} onChange={handleChange} placeholder="Say something..." />
-        //         <input onChange={selectFile} type="file" />
-        //         <Button>Send</Button>
-        //     </Form>
-        // </Page>
     );
 };
 

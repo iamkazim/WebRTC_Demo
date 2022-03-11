@@ -51,11 +51,9 @@ const styles = StyleSheet.create({
   root: {
     backgroundColor: '#fff',
     flex: 1,
-    // alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
-    // alignSelf: 'center',
     paddingHorizontal: 20,
     justifyContent: 'center',
   },

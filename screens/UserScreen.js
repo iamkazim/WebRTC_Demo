@@ -14,7 +14,8 @@ const UserList = ({ navigation }) => {
     const Users = async () => {
         const token = await AsyncStorage.getItem('TOKEN')
         socketRef.current = io.connect('http://159.203.8.120:3001', {
-            query: { token }
+            query: { token },
+            // transports: ['websocket']
         });
 
         socketRef.current.on("profile", id => {
@@ -29,9 +30,9 @@ const UserList = ({ navigation }) => {
             setYourID(id.id);
         })
 
-        socketRef.current.on('myProfileId', ({ profileId }) => {
-            socket.join(profileId);
-        });
+        // socketRef.current.on('myProfileId', ({ profileId }) => {
+        //     socket.join(profileId);
+        // });
 
         // For Search Engine
         socketRef.current.on("user list", (name) => {

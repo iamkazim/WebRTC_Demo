@@ -4,7 +4,7 @@ import io from "socket.io-client";
 import AsyncStorage from '@react-native-community/async-storage';
 import DocumentPicker from 'react-native-document-picker';
 
-const CommunityChatScreen = ({ route, navigation }) => {
+const CommunityChatScreen = ({ navigation }) => {
     const [yourID, setYourID] = useState();
     const [token, setToken] = useState('');
     const [messages, setMessages] = useState([]);

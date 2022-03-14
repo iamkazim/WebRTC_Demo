@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, Image, PermissionsAndroid, Alert } from "react-native";
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity, Image } from "react-native";
 import io from "socket.io-client";
 import AsyncStorage from '@react-native-community/async-storage';
-import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import { launchImageLibrary } from 'react-native-image-picker';
+import Database from "../Database";
+
+const db = new Database();
 
 const NewChatScreen = ({ route, navigation }) => {
     const [yourID, setYourID] = useState();
@@ -12,7 +14,7 @@ const NewChatScreen = ({ route, navigation }) => {
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState("");
     const [file, setFile] = useState();
-    const [imageCon, setImageCon] = useState();
+    const [imageCon, setImageCon] = useState(null);
     console.log("all messages", messages);
     const Ids = route?.params?.Id[0]?.profileId
     console.log(Ids);
@@ -67,9 +69,14 @@ const NewChatScreen = ({ route, navigation }) => {
     }, [yourID]);
 
     function receivedMessage(message) {
+        db.addMessage(message.id, message.receiverProfileId, message.senderProfileId, message.message)
+            .then((result) => {
+                console.log("result", result);
+            }).catch((err) => {
+                console.log(err);
+            })
         setMessages(oldMsgs => [...oldMsgs, message]);
     }
-
 
     const imageGalleryLaunch = () => {
         let options = {
@@ -101,36 +108,14 @@ const NewChatScreen = ({ route, navigation }) => {
                     console.log('fileSize -> ', res.assets[i].fileSize);
                     console.log('type -> ', res.assets[i].type);
                     console.log('fileName -> ', res.assets[i].fileName);
-
+                    RNFS.readFile(res.assets[i].uri, 'base64').then(res => {
+                        setImageCon(res);
+                    })
                     setFile(res.assets[i]);
                 }
             }
         });
     }
-
-    // const chooseFile = async () => {
-    //     try {
-    //         const granted = await PermissionsAndroid.request(
-    //             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-    //             {
-    //                 title: 'webSocket Storage Permission',
-    //                 message:
-    //                     'webSocket App needs access to your storage to download Photos.',
-    //             },
-    //         );
-    //         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-    //             const image = await DocumentPicker.pick({
-    //                 type: [DocumentPicker.types.allFiles],
-    //             });
-    //             setFile(image[0])
-    //             console.log('filepath', file);
-    //         } else {
-    //             Alert.alert('Storage Permission Not Granted');
-    //         }
-    //     } catch (err) {
-    //         console.warn(err);
-    //     }
-    // }
 
     function sendMessage(e) {
         e.preventDefault();
@@ -142,10 +127,6 @@ const NewChatScreen = ({ route, navigation }) => {
             else {
                 receiverProfileId = yourID
             }
-            RNFS.readFile(file?.uri, 'base64').then(res => {
-                setImageCon(res);
-            })
-            // console.log("response", imageCon);
             const messageObject = {
                 id: yourID,
                 senderProfileId: yourID,
@@ -155,10 +136,11 @@ const NewChatScreen = ({ route, navigation }) => {
                 mimeType: file?.type,
                 fileName: file?.fileName
             };
-            socketRef.current.emit("send message", messageObject);
-            console.log("Object", messageObject);
             setMessage("");
             setFile();
+            setImageCon(null);
+            console.log("Object", messageObject);
+            socketRef.current.emit("send message", messageObject);
         } else {
             var receiverProfileId;
             if (yourID == yourID) {
@@ -174,6 +156,17 @@ const NewChatScreen = ({ route, navigation }) => {
                 id: yourID,
             };
             setMessage("");
+            db.addMessage(messageObject.id, messageObject.receiverProfileId, messageObject.senderProfileId, messageObject.message).then((result) => {
+                console.log(result);
+            }).catch((err) => {
+                console.log(err);
+            });
+            db.ChatbyId(messageObject.id)
+                .then((results) => {
+                    console.log("chatssssss", results);
+                }).catch((err) => {
+                    console.log(err);
+                })
             socketRef.current.emit("send message", messageObject);
         }
     }
@@ -184,16 +177,24 @@ const NewChatScreen = ({ route, navigation }) => {
 
     const renderMessagesItem = ({ item }) => {
         return (
-            <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+            <View style={{
+                flex: 1, backgroundColor: '#FFFFFF', paddingLeft: item.senderProfileId === yourID ? 15 : 0,
+                paddingRight: item.senderProfileId === yourID ? 0 : 15
+            }}>
                 <View style={{
-                    width: '80%', margin: 5, alignSelf: item.senderProfileId === yourID ? 'flex-start' : 'flex-end',
-                    borderRadius: 12, justifyContent: 'center', backgroundColor: item.senderProfileId != yourID ? 'lightgrey' : 'cyan'
+                    margin: 5, alignSelf: item.senderProfileId === yourID ? 'flex-start' : 'flex-end',
+                    borderRadius: 12, justifyContent: 'center', backgroundColor: item.senderProfileId != yourID ? 'lightgrey' : 'cyan',
                 }}>
                     <Text style={{ fontSize: 18, fontWeight: '800', margin: 10 }}>
                         {item.message}
                     </Text>
+                </View>
+                <View style={{
+                    alignSelf: item.senderProfileId === yourID ? 'flex-start' : 'flex-end',
+                    justifyContent: 'center', backgroundColor: item.senderProfileId != yourID ? 'lightgrey' : 'cyan'
+                }}>
                     {item.file ?
-                        <Image source={{ uri: item.imageUrl }} style={{ width: 90, height: 90 }} /> : null}
+                        <Image source={{ uri: item.imageUrl }} style={{ width: 100, height: 100, borderRadius: 10 }} /> : null}
                 </View>
             </View>
         )
